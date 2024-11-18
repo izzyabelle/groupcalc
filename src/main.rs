@@ -87,7 +87,7 @@ where
             errors.push("Group is not closed under the operation.");
         }
         if !self.is_associative() {
-            eprintln!("{}{} {}", ERROR, AXIOM_ASSOC, AXIOM_FAILURE);
+            eprintln!("{}{} {}", ERROR, AXIOM_ASSOCIATIVE, AXIOM_FAILURE);
             errors.push("Operation is not associative.");
         }
         if !self.has_identity() {
@@ -124,7 +124,7 @@ fn main() -> Result<()> {
 }
 
 const AXIOM_CLOSURE: &str = "Closure";
-const AXIOM_ASSOC: &str = "Associativity";
+const AXIOM_ASSOCIATIVE: &str = "Associativity";
 const AXIOM_IDENTITY: &str = "Identity";
 const AXIOM_INVERSE: &str = "Inverse";
 
