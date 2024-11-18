@@ -178,7 +178,7 @@ fn run() -> Result<()> {
                 println!("  {} - Add an element to the group", CMD_ADD);
                 println!("  {} - Set the identity element", CMD_IDENTITY);
                 println!("  {} - List current elements and identity", CMD_LIST);
-                println!("  {} - Attempt to create the group", CMD_CREATE);
+                println!("  {} - Validate and create the group", CMD_CREATE);
                 println!("  {} - Exit the program", CMD_EXIT);
             }
             CMD_CREATE => {
