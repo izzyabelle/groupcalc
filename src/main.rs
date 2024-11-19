@@ -83,26 +83,22 @@ where
         let mut errors = Vec::new();
 
         if !self.is_closed() {
-            eprintln!("{}{} {}", ERROR, AXIOM_CLOSURE, AXIOM_FAILURE);
-            errors.push("Group is not closed under the operation.");
+            errors.push("  Group is not closed under the operation.");
         }
         if !self.is_associative() {
-            eprintln!("{}{} {}", ERROR, AXIOM_ASSOCIATIVE, AXIOM_FAILURE);
-            errors.push("Operation is not associative.");
+            errors.push("  Operation is not associative.");
         }
         if !self.has_identity() {
-            eprintln!("{}{} {}", ERROR, AXIOM_IDENTITY, AXIOM_FAILURE);
-            errors.push("No valid identity element found.");
+            errors.push("  No valid identity element found.");
         }
         if !self.has_inverses() {
-            eprintln!("{}{} {}", ERROR, AXIOM_INVERSE, AXIOM_FAILURE);
-            errors.push("Not all elements have inverses.");
+            errors.push("  Not all elements have inverses.");
         }
 
         if errors.is_empty() {
             Ok(())
         } else {
-            Err(anyhow!(errors.join("; ")))
+            Err(anyhow!(errors.join("\n")))
         }
     }
 }
@@ -117,20 +113,13 @@ fn main() -> Result<()> {
     match run() {
         Ok(_) => Ok(()),
         Err(e) => {
-            eprintln!("Error: {}", e);
+            eprintln!("Error: {}\n", e);
             Err(e)
         }
     }
 }
 
-const AXIOM_CLOSURE: &str = "Closure";
-const AXIOM_ASSOCIATIVE: &str = "Associativity";
-const AXIOM_IDENTITY: &str = "Identity";
-const AXIOM_INVERSE: &str = "Inverse";
-
-const ERROR: &str = "Error: ";
-const AXIOM_FAILURE: &str = "Unsatisfied";
-
+const MAIN_PROMPT: &str = "Command (type help to list commands):\n  ";
 const CMD_ADD: &str = "add";
 const CMD_IDENTITY: &str = "identity";
 const CMD_LIST: &str = "list";
@@ -138,31 +127,41 @@ const CMD_HELP: &str = "help";
 const CMD_CREATE: &str = "create";
 const CMD_EXIT: &str = "exit";
 
-const MAIN_PROMPT: &str = "Command (type help to list commands): ";
-
 fn run() -> Result<()> {
     let mut elements = HashSet::new();
     let mut identity = None;
     let operation = |a: &i32, b: &i32, m: usize| (a + b) % m as i32;
 
     loop {
-        match user_prompt(MAIN_PROMPT)?.as_str() {
-            CMD_ADD => match i32::from_str(&user_prompt("Enter element: ")?) {
-                Ok(num) => {
-                    elements.insert(num);
-                    println!("Element added.");
+        let input = user_prompt(MAIN_PROMPT)?;
+        let mut parts = input.split_whitespace();
+        let command = parts.next().unwrap_or("");
+
+        match command {
+            CMD_ADD => {
+                let mut added_any = false;
+                for arg in parts {
+                    match i32::from_str(arg) {
+                        Ok(num) => {
+                            elements.insert(num);
+                            added_any = true;
+                        }
+                        Err(_) => {
+                            eprintln!("Invalid input: '{}', please enter an integer.", arg);
+                        }
+                    }
                 }
-                Err(_) => {
-                    println!("Invalid input, please enter an integer.");
+                if added_any {
+                    println!("Elements added.");
                 }
-            },
-            CMD_IDENTITY => match i32::from_str(&user_prompt("Enter identity element: ")?) {
-                Ok(num) => {
+            }
+            CMD_IDENTITY => match parts.next().and_then(|arg| i32::from_str(arg).ok()) {
+                Some(num) => {
                     identity = Some(num);
                     println!("Identity set.");
                 }
-                Err(_) => {
-                    println!("Invalid input, please enter an integer.");
+                None => {
+                    eprintln!("Invalid input, please enter an integer.");
                 }
             },
             CMD_LIST => {
@@ -170,13 +169,16 @@ fn run() -> Result<()> {
                 if let Some(id) = identity {
                     println!("Identity element: {}", id);
                 } else {
-                    println!("Identity element not set.");
+                    eprintln!("Identity element not set.");
                 }
             }
             CMD_HELP => {
                 println!("Available commands:");
-                println!("  {} - Add an element to the group", CMD_ADD);
-                println!("  {} - Set the identity element", CMD_IDENTITY);
+                println!(
+                    "  {} <element1> <element2> ... - Add elements to the group",
+                    CMD_ADD
+                );
+                println!("  {} <identity> - Set the identity element", CMD_IDENTITY);
                 println!("  {} - List current elements and identity", CMD_LIST);
                 println!("  {} - Validate and create the group", CMD_CREATE);
                 println!("  {} - Exit the program", CMD_EXIT);
@@ -185,10 +187,10 @@ fn run() -> Result<()> {
                 if let Some(identity) = identity {
                     match Group::new(elements.clone(), operation, identity) {
                         Ok(group) => println!("Group created: {:?}", group),
-                        Err(e) => println!("Error creating group: {}", e),
+                        Err(e) => eprintln!("Error creating group:\n{}", e),
                     }
                 } else {
-                    println!("Identity element not set.");
+                    eprintln!("Identity element not set.");
                 }
             }
             CMD_EXIT => break,
@@ -203,9 +205,11 @@ fn run() -> Result<()> {
 }
 
 fn user_prompt(prompt: &str) -> Result<String> {
-    print!("{}> ", prompt);
+    println!();
+    print!("{}>> ", prompt);
     io::stdout().flush()?;
     let mut input = String::new();
     io::stdin().read_line(&mut input)?;
+    println!();
     Ok(input.trim().to_string())
 }
